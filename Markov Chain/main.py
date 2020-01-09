@@ -1,3 +1,5 @@
+#Regions of Cooperation and Defection between two SM(0,1) agents
+
 import random
 import numpy as np
 from discreteMarkovChain import markovChain
