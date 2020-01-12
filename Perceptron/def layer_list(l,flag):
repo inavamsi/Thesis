@@ -1,0 +1,25 @@
+def layer_list(l,flag):
+	game_para=[0.5, 0, 1, 0.2]
+	total_turns=100
+	total_res=3000
+	pop=[]
+
+	consumption_per=0
+	for i in range(500):
+		#pop.append(Mperp(100,0.1,2,1,l,consumption_per))
+		pop.append(Mperp(100,0.1,2,0,l,consumption_per))
+		pop.append(Mperp(100,0.1,0,2,l,consumption_per))
+		#pop.append(Mperp(100,0.1,1,2,l,consumption_per))
+		pop.append(Mperp(100,0.1,1,1,l,consumption_per))
+		#pop.append(Mperp(100,0.1,0,6,[]))
+		
+	ptypes=[]
+	for p in pop:
+		if p.type not in ptypes:
+			ptypes.append(p.type)
+	mut_type='all'
+	#mut_type='one'
+	return world(20,200,"types",total_res,ptypes,mut_type,game_para,total_turns,pop,flag)
+
+for l in [[2],[2,2],[3],[3,2]]:
+	print(l,"  ->  ",layer_list(l,True))
