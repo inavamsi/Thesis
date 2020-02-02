@@ -182,9 +182,10 @@ class Mperp(Player): # A player with random attributes, mutation rate var, and m
 	def make_move(self):
 		if self.turn==1:
 			return self.starting_move
-		elif self.turn<max(self.my_memory,self.opp_memory):
+		elif self.turn<=max(self.my_memory,self.opp_memory):
 			#Make better
-			return self.returnC(0.5)
+			#return self.returnC(0.5)
+			return self.opp_move_history[-1]
 		else:
 			if self.my_memory==0:
 				para_list = self.opp_move_history[int(-self.opp_memory):]

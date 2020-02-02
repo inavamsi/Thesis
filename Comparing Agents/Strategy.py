@@ -78,6 +78,19 @@ class TFT(Player):
 		else:
 			return self.opp_move_history[-1]
 
+class TFTn(Player):
+	def __init__(self,total_turns,n_start):
+		Player.__init__(self,total_turns)
+		self.n_start=n_start
+		self.starting_move='C'
+		self.type="TFTn"
+
+	def make_move(self):
+		if self.turn<=self.n_start:
+			return self.starting_move
+		else:
+			return self.opp_move_history[-1]
+
 class GRIM(Player):
 	def __init__(self,total_turns):
 		Player.__init__(self,total_turns)

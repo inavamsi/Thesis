@@ -67,6 +67,9 @@ class Mperp(Player): # A player with random attributes, mutation rate var, and m
 		self.layer_list=layer_list
 		weight_list=[my_memory+opp_memory]+layer_list
 		bias_list=layer_list+[1]
+		if my_memory<0 or opp_memory<0 or my_memory+opp_memory<=0:
+			print("Error: perceptron agent with given memory constraints cannot exist.")
+			return None
 		if strategy_params==None:
 			self.weights=[]
 			self.bias=[]
@@ -96,7 +99,7 @@ class Mperp(Player): # A player with random attributes, mutation rate var, and m
 		self.var=var
 		self.my_memory=my_memory
 		self.opp_memory=opp_memory
-		self.type='PM_'+str(layer_list)+'_('+str(my_memory)+','+str(opp_memory)+')'
+		self.type='Mperp_'+str(var)+'_'+str(my_memory)+'_'+str(opp_memory)+'_'+str(layer_list)
 		#print(self.type,"  ",my_memory,"  ",opp_memory)
 
 	def normalize_weights(self):
@@ -188,9 +191,10 @@ class Mperp(Player): # A player with random attributes, mutation rate var, and m
 	def make_move(self):
 		if self.turn==1:
 			return self.starting_move
-		elif self.turn<max(self.my_memory,self.opp_memory):
+		elif self.turn<=max(self.my_memory,self.opp_memory):
 			#Make better
-			return self.returnC(0.5)
+			return self.opp_move_history[-1]
+			#return self.returnC()
 		else:
 			if self.my_memory==0:
 				para_list = self.opp_move_history[int(-self.opp_memory):]
@@ -199,5 +203,130 @@ class Mperp(Player): # A player with random attributes, mutation rate var, and m
 			else:
 				para_list = self.my_move_history[int(-self.my_memory):]+self.opp_move_history[int(-self.opp_memory):]
 
+			p = self.getp_from_strategy_params(para_list)
+			return self.returnC(p)
+
+class Mperp_disc(Mperp):
+	def __init__(self,total_turns,var,discount_rate,my_memory,opp_memory,layer_list,consumption_per,strategy_params=None):	
+		Mperp.__init__(self,total_turns,var,my_memory,opp_memory,layer_list,consumption_per,strategy_params)
+		self.discount_rate=discount_rate
+		self.my_discounted_val=0
+		self.opp_discounted_val=0
+		self.starting_move='C'
+		self.Cval=1
+		self.type='Mperp_disc_'+str(var)+'_'+str(discount_rate)+'_'+str(my_memory)+'_'+str(opp_memory)+'_'+str(layer_list)
+		
+
+	def get_disc_values(self,disc_value,history,number):
+		l=[]
+		if number==0:
+			return l
+		l.append(disc_value)
+		for i in range(1,number):
+			move=history[-i]
+			if move=='C':
+				disc_value-=self.Cval
+			if self.discount_rate==0:
+				if history[-i-1]=='C':
+					disc_value=self.Cval
+				else:
+					disc_value=0
+			else:
+				disc_value/=self.discount_rate
+			l.append(disc_value)
+
+		l.reverse()
+		return l
+
+	def procreate_allM(self):
+
+		new_weights=copy.deepcopy(self.weights)
+		new_bias=copy.deepcopy(self.bias)
+		for layer_no,layer in enumerate(new_weights):
+			for node_no,node in enumerate(layer):
+				for w_no,w in enumerate(node):
+					new_w=self.normalp()+new_weights[layer_no][node_no][w_no]
+					new_weights[layer_no][node_no][w_no]=max(-1,min(1, new_w))
+
+		for layer_no,layer in enumerate(new_bias):
+			for b_no,b in enumerate(layer):
+				new_b=new_bias[layer_no][b_no]+self.normalp()
+				new_bias[layer_no][b_no]=max(-1,min(1, new_b))
+
+		new_strat=[]
+		new_strat=(new_weights,new_bias)
+
+		kid = Mperp_disc(self.total_turns,self.var,self.discount_rate,self.my_memory,self.opp_memory,self.layer_list,self.consumption_per,new_strat)
+		return kid
+
+	def procreate_oneM(self):
+
+		new_weights=copy.deepcopy(self.weights)
+		new_bias=copy.deepcopy(self.bias)
+		layer_no=random.randint(0,len(self.weights)-1)
+		node_no=random.randint(0,len(self.weights[layer_no])-1)
+
+		for w_no,w in enumerate(new_weights[layer_no][node_no]):
+			new_w=self.normalp()+new_weights[layer_no][node_no][w_no]
+			new_weights[layer_no][node_no][w_no]=max(-1,min(1, new_w))
+		
+		new_b=new_bias[layer_no][node_no]+self.normalp()
+		new_bias[layer_no][node_no]=max(-1,min(1, new_b))
+
+		new_strat=[]
+		new_strat=(new_weights,new_bias)
+
+		kid = Mperp_disc(self.total_turns,self.var,self.discount_rate,self.my_memory,self.opp_memory,self.layer_list,self.consumption_per,new_strat)
+		return kid
+
+	def getp_from_strategy_params(self,para_list):
+		node_values=copy.deepcopy(self.bias)
+
+		for b_node in range(len(node_values[0])):
+			b_node_value=0
+			for index,input_move in enumerate(para_list):
+				input_val=input_move
+				b_node_value+=input_val*self.weights[0][b_node][index]
+
+			if node_values[0][b_node]+ b_node_value >0:
+				node_values[0][b_node]=1
+			else:
+				node_values[0][b_node]=0
+
+		for layer_no in range(1,len(node_values)):
+			for b_node in range(len(node_values[layer_no])):
+				b_node_value=0
+				for index,input_val in enumerate(node_values[layer_no-1]):
+					b_node_value+=input_val*self.weights[layer_no][b_node][index]
+
+			if node_values[layer_no][b_node]+ b_node_value >0:
+				node_values[layer_no][b_node]=1
+			else:
+				node_values[layer_no][b_node]=0
+
+		return node_values[-1][0]
+
+	def make_move(self):
+		if self.turn!=1:
+			self.my_discounted_val*=self.discount_rate
+			self.opp_discounted_val*=self.discount_rate
+			if self.my_move_history[-1]=='C':
+				self.my_discounted_val+=self.Cval
+			if self.opp_move_history[-1]=='C':
+				self.opp_discounted_val+=self.Cval
+		if self.turn==1:
+			return self.starting_move
+		elif self.turn<=max(self.my_memory,self.opp_memory):
+			#Make better
+			return self.returnC(1)
+		else:
+			if self.my_memory==0:
+				para_list = self.get_disc_values(self.opp_discounted_val,self.opp_move_history,self.opp_memory)
+			elif self.opp_memory==0:
+				para_list = self.get_disc_values(self.my_discounted_val,self.my_move_history,self.my_memory)
+			else:
+				para_list = self.get_disc_values(self.my_discounted_val,self.my_move_history,self.my_memory)+self.get_disc_values(self.opp_discounted_val,self.opp_move_history,self.opp_memory)
+
+			#print(self.my_move_history[-self.my_memory],self.opp_move_history[-self.opp_memory],"para_list:",para_list)
 			p = self.getp_from_strategy_params(para_list)
 			return self.returnC(p)

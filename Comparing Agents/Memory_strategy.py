@@ -13,12 +13,6 @@ class Player():
     	self.amount=0
     	self.type=None
 
-    def reset(self):
-    	self.my_move_history=[]
-    	self.opp_move_history=[]
-    	self.turn=1
-    	self.amount=0
-
     def make_move(self):
     	return None
 
@@ -71,7 +65,7 @@ class Mn(Player): # A player with random attributes, mutation rate var, and memo
 		self.var=var
 		self.my_memory=my_memory
 		self.opp_memory=opp_memory
-		self.type='Mn('+str(my_memory)+','+str(opp_memory)+')'
+		self.type='Mn_'+str(var)+'_'+str(my_memory)+'_'+str(opp_memory)
 		#print(self.type,"  ",my_memory,"  ",opp_memory)
 
 	def normalp(self):
@@ -113,7 +107,8 @@ class Mn(Player): # A player with random attributes, mutation rate var, and memo
 			return self.starting_move
 		elif self.turn<max(self.my_memory,self.opp_memory):
 			#Make better
-			return self.returnC(0.5)
+			#return self.returnC(0.5)
+			return self.opp_move_history[-1]
 		else:
 			if self.my_memory==0:
 				para_list = self.opp_move_history[int(-self.opp_memory):]
