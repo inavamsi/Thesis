@@ -1,0 +1,63 @@
+import random
+import numpy as np
+import copy
+import matplotlib.pyplot as plt
+import math
+
+alpha1=0.1
+delta=0.35
+
+Bap=0.05
+Baq=0.1
+Bbp=0
+Bbq=0.05
+
+Uap=random.random()
+Uaq=-random.random()
+Ubp=-random.random()
+Ubq=random.random()
+print(Uap,Uaq,Ubp,Ubq)
+
+dt=0.0001
+
+def fn(input):
+	[A,B,P,Q]=input
+
+def simulate(days, A,B,P,Q):
+	A_list=[]
+	B_list=[]
+	P_list=[]
+	Q_list=[]
+
+	for i in range(days):
+		
+		dA = alpha*1.014*A - Bap*A*P - Baq*A*Q
+		dB = alpha*0.7*B - Bbp*B*P - Bbq*B*Q
+		dP = Bap*Uap*A*P + Bbp*Ubp*B*P - delta*P
+		if Uaq*A + Ubq*B > 0:
+			dQ = Baq*Uaq*A*Q + Bbq*Ubq*B*Q - delta*Q
+		else:
+			dQ = -delta*Q
+		
+		A+=dA*dt
+		B+=dB*dt
+		P+=dP*dt
+		Q+=dQ*dt
+
+		A_list.append(A)
+		B_list.append(B)
+		P_list.append(P)
+		Q_list.append(Q)
+
+	plt.plot(A_list)
+	plt.plot(B_list)
+	plt.plot(P_list)
+	plt.plot(Q_list)
+	plt.xticks([])
+	plt.yticks([])
+
+	plt.title('A and B mimic: Expected utility is positive')
+	plt.legend(['A',"B","P","Q"],loc='upper right', shadow=True)
+	plt.show()
+
+simulate(1000000,10,11,2,3)   
